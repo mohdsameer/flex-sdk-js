@@ -2,7 +2,7 @@
 
 import transit from 'transit-js';
 import _ from 'lodash';
-import { UUID, LatLng, Money, BigDecimal } from './types';
+import { UUID, LatLng, Money, BigDecimal, toClassInstance } from './types';
 
 /**
    Composes two readers (default and custom) so that:
@@ -231,18 +231,9 @@ const MapHandler = [
   Object,
   transit.makeWriteHandler({
     tag: v => {
-      if (v._sdkType) {
-        return _.findKey(typeMap, typeClass => v._sdkType === typeClass._sdkType);
-      }
-
       return 'map';
     },
     rep: v => {
-      if (v._sdkType) {
-        const defaultWriter = _.find(defaultWriters, w => w.type._sdkType === v._sdkType);
-        return defaultWriter.writer(v);
-      }
-
       return _.reduce(
         v,
         (map, val, key) => {
@@ -265,6 +256,10 @@ export const writer = (customWriters = [], opts = {}) => {
 
     transform: v => {
       if (v && v instanceof Object) {
+        if (v._sdkType) {
+          return toClassInstance(v);
+        }
+
         const customWriter = _.find(customWriters, w => w.isCustomType && w.isCustomType(v));
 
         if (customWriter) {
